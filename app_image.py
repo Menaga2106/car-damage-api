@@ -1,22 +1,30 @@
 from flask import Flask, request, jsonify
-from tensorflow.keras.models import load_model
-from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from PIL import Image
 import numpy as np
 import io
 import base64
 import json
 import traceback
+import tflite_runtime.interpreter as tflite
 
 app = Flask(__name__)
 
-model = load_model("car_damage_model_v2.h5")
+interpreter = tflite.Interpreter(model_path="car_damage_model.tflite")
+interpreter.allocate_tensors()
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
+
 IMG_SIZE = 160
 CLASS_NAMES = ["damaged", "whole"]
 
+def preprocess_input(x):
+    x = x.astype(np.float32)
+    x = (x / 127.5) - 1.0
+    return x
+
 @app.route("/", methods=["GET"])
 def home():
-    return jsonify({"status": "Car Damage Detection API v2 is running"})
+    return jsonify({"status": "Car Damage Detection API (TFLite) is running"})
 
 @app.route("/predict-image", methods=["POST"])
 def predict_image():
@@ -41,7 +49,10 @@ def predict_image():
         img_array = np.expand_dims(img_array, axis=0)
         img_array = preprocess_input(img_array)
 
-        prediction = model.predict(img_array)[0][0]
+        interpreter.set_tensor(input_details[0]['index'], img_array)
+        interpreter.invoke()
+        prediction = interpreter.get_tensor(output_details[0]['index'])[0][0]
+
         label = CLASS_NAMES[1] if prediction > 0.5 else CLASS_NAMES[0]
         confidence = float(prediction) if prediction > 0.5 else float(1 - prediction)
 

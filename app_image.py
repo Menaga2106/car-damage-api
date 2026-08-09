@@ -5,11 +5,11 @@ import io
 import base64
 import json
 import traceback
-import tflite_runtime.interpreter as tflite
+from ai_edge_litert.interpreter import Interpreter
 
 app = Flask(__name__)
 
-interpreter = tflite.Interpreter(model_path="car_damage_model.tflite")
+interpreter = Interpreter(model_path="car_damage_model.tflite")
 interpreter.allocate_tensors()
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()

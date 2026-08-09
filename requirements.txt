@@ -1,5 +1,5 @@
 flask
-tflite-runtime
+numpy<2
 pillow
-numpy
 gunicorn
+ai-edge-litert
